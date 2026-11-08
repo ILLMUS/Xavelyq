@@ -1,0 +1,693 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: Platform-independent E-Commerce Growth Engine API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: dashboard
+    description: Tenant-scoped dashboard summaries and activity
+  - name: organizations
+    description: Organization and tenant management
+  - name: stores
+    description: Store management across supported commerce platforms
+  - name: features
+    description: The complete 45-module feature registry and store configuration
+security:
+  - ClerkSession: []
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [dashboard]
+      summary: Get a tenant-scoped dashboard summary
+      description: Returns persisted store and feature counts only; commerce analytics are not fabricated.
+      parameters:
+        - name: organizationId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /organizations:
+    get:
+      operationId: listOrganizations
+      tags: [organizations]
+      summary: List organizations for the signed-in user
+      responses:
+        "200":
+          description: Organizations the current user can access
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Organization"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      operationId: createOrganization
+      tags: [organizations]
+      summary: Create an organization and make the current user its owner
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OrganizationInput"
+      responses:
+        "201":
+          description: Organization created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Organization"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /organizations/{organizationId}:
+    patch:
+      operationId: updateOrganization
+      tags: [organizations]
+      summary: Update organization details
+      parameters:
+        - $ref: "#/components/parameters/OrganizationId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OrganizationUpdate"
+      responses:
+        "200":
+          description: Updated organization
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Organization"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /organizations/{organizationId}/stores:
+    get:
+      operationId: listStores
+      tags: [stores]
+      summary: List stores belonging to an organization
+      parameters:
+        - $ref: "#/components/parameters/OrganizationId"
+      responses:
+        "200":
+          description: Organization stores
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Store"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    post:
+      operationId: createStore
+      tags: [stores]
+      summary: Add a store connection record
+      description: Creates a store record in setup-required state; it does not claim a live platform connection.
+      parameters:
+        - $ref: "#/components/parameters/OrganizationId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StoreInput"
+      responses:
+        "201":
+          description: Store record created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Store"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /stores/{storeId}:
+    get:
+      operationId: getStore
+      tags: [stores]
+      summary: Get a store the current user can access
+      parameters:
+        - $ref: "#/components/parameters/StoreId"
+      responses:
+        "200":
+          description: Store details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Store"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      operationId: updateStore
+      tags: [stores]
+      summary: Update store details
+      parameters:
+        - $ref: "#/components/parameters/StoreId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StoreUpdate"
+      responses:
+        "200":
+          description: Updated store
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Store"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /features:
+    get:
+      operationId: listFeatures
+      tags: [features]
+      summary: List the complete feature registry
+      parameters:
+        - name: category
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/FeatureCategory"
+        - name: implementationStatus
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/ImplementationStatus"
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 120
+      responses:
+        "200":
+          description: Feature registry entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FeatureDefinition"
+  /stores/{storeId}/features:
+    get:
+      operationId: listStoreFeatures
+      tags: [features]
+      summary: List feature configuration for a store
+      parameters:
+        - $ref: "#/components/parameters/StoreId"
+      responses:
+        "200":
+          description: Registry entries with persisted store-level settings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StoreFeatureView"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /stores/{storeId}/features/{featureId}:
+    put:
+      operationId: updateStoreFeature
+      tags: [features]
+      summary: Save a store-level feature activation and settings
+      description: Planned modules cannot be enabled until their implementation status allows activation.
+      parameters:
+        - $ref: "#/components/parameters/StoreId"
+        - name: featureId
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 3
+            maxLength: 100
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StoreFeatureUpdate"
+      responses:
+        "200":
+          description: Persisted store feature configuration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StoreFeature"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Feature is not currently available or a dependency is disabled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /organizations/{organizationId}/activity:
+    get:
+      operationId: listOrganizationActivity
+      tags: [dashboard]
+      summary: List recent organization audit activity
+      parameters:
+        - $ref: "#/components/parameters/OrganizationId"
+      responses:
+        "200":
+          description: Recent audit activity
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ActivityItem"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+components:
+  securitySchemes:
+    ClerkSession:
+      type: apiKey
+      in: cookie
+      name: __session
+  parameters:
+    OrganizationId:
+      name: organizationId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    StoreId:
+      name: storeId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Unauthorized:
+      description: A valid signed-in session is required
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Forbidden:
+      description: The current user is not allowed to access this tenant or resource
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required: [error]
+    FeatureCategory:
+      type: string
+      enum:
+        - foundation
+        - sales_conversion
+        - shopping_experience
+        - marketing_recovery
+        - conversion_psychology
+        - analytics
+        - retention
+        - ai_intelligence
+    ImplementationStatus:
+      type: string
+      enum: [available, in_development, planned, not_available]
+    StorePlatform:
+      type: string
+      enum:
+        - shopify
+        - woocommerce
+        - lovable
+        - react_vite
+        - custom_javascript
+        - custom_html
+        - custom_backend
+        - other
+    StoreConnectionStatus:
+      type: string
+      enum: [setup_required, awaiting_verification, connected, disconnected]
+    OrganizationRole:
+      type: string
+      enum: [owner, admin, member]
+    Organization:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        slug:
+          type: string
+        role:
+          $ref: "#/components/schemas/OrganizationRole"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, name, slug, role, createdAt, updatedAt]
+    OrganizationInput:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 100
+      required: [name]
+    OrganizationUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 100
+      required: [name]
+    Store:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        organizationId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        platform:
+          $ref: "#/components/schemas/StorePlatform"
+        primaryDomain:
+          type: [string, "null"]
+        connectionStatus:
+          $ref: "#/components/schemas/StoreConnectionStatus"
+        isDefault:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - organizationId
+        - name
+        - platform
+        - primaryDomain
+        - connectionStatus
+        - isDefault
+        - createdAt
+        - updatedAt
+    StoreInput:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 120
+        platform:
+          $ref: "#/components/schemas/StorePlatform"
+        primaryDomain:
+          type: [string, "null"]
+          maxLength: 253
+        isDefault:
+          type: boolean
+          default: false
+      required: [name, platform]
+    StoreUpdate:
+      type: object
+      minProperties: 1
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 120
+        primaryDomain:
+          type: [string, "null"]
+          maxLength: 253
+        isDefault:
+          type: boolean
+    FeatureDefinition:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        category:
+          $ref: "#/components/schemas/FeatureCategory"
+        version:
+          type: string
+        implementationStatus:
+          $ref: "#/components/schemas/ImplementationStatus"
+        canActivate:
+          type: boolean
+        dependencies:
+          type: array
+          items:
+            type: string
+        platformCompatibility:
+          type: array
+          items:
+            $ref: "#/components/schemas/StorePlatform"
+        requiredPermissions:
+          type: array
+          items:
+            type: string
+        requiredData:
+          type: array
+          items:
+            type: string
+        supportedEvents:
+          type: array
+          items:
+            type: string
+        apiEndpoints:
+          type: array
+          items:
+            type: string
+        storefrontRequirements:
+          type: array
+          items:
+            type: string
+        usageLimits:
+          type: object
+          additionalProperties: true
+        configurationSchema:
+          type: object
+          additionalProperties: true
+        testingRequirements:
+          type: array
+          items:
+            type: string
+      required:
+        - id
+        - name
+        - description
+        - category
+        - version
+        - implementationStatus
+        - canActivate
+        - dependencies
+        - platformCompatibility
+        - requiredPermissions
+        - requiredData
+        - supportedEvents
+        - apiEndpoints
+        - storefrontRequirements
+        - usageLimits
+        - configurationSchema
+        - testingRequirements
+    StoreFeature:
+      type: object
+      properties:
+        featureId:
+          type: string
+        enabled:
+          type: boolean
+        settings:
+          type: object
+          additionalProperties: true
+        updatedAt:
+          type: string
+          format: date-time
+      required: [featureId, enabled, settings, updatedAt]
+    StoreFeatureView:
+      type: object
+      properties:
+        feature:
+          $ref: "#/components/schemas/FeatureDefinition"
+        configuration:
+          $ref: "#/components/schemas/StoreFeature"
+      required: [feature, configuration]
+    StoreFeatureUpdate:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+        settings:
+          type: object
+          additionalProperties: true
+      required: [enabled, settings]
+    ActivityItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        action:
+          type: string
+        targetType:
+          type: string
+        targetId:
+          type: [string, "null"]
+        summary:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, action, targetType, targetId, summary, createdAt]
+    DashboardSummary:
+      type: object
+      properties:
+        organizationId:
+          type: string
+          format: uuid
+        storeCount:
+          type: integer
+          minimum: 0
+        connectedStoreCount:
+          type: integer
+          minimum: 0
+        enabledFeatureCount:
+          type: integer
+          minimum: 0
+        availableFeatureCount:
+          type: integer
+          minimum: 0
+        inDevelopmentFeatureCount:
+          type: integer
+          minimum: 0
+        plannedFeatureCount:
+          type: integer
+          minimum: 0
+        setupState:
+          type: string
+          enum: [needs_store, setup_required, connected]
+        recentActivity:
+          type: array
+          items:
+            $ref: "#/components/schemas/ActivityItem"
+      required:
+        - organizationId
+        - storeCount
+        - connectedStoreCount
+        - enabledFeatureCount
+        - availableFeatureCount
+        - inDevelopmentFeatureCount
+        - plannedFeatureCount
+        - setupState
+        - recentActivity
+

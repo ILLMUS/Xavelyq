@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "E-Commerce Growth Engine"
+description = "A platform-independent merchant growth platform for connecting online stores, configuring growth modules, and managing store intelligence from one workspace. Phase 1 provides tenant and store management with a truthful 45-module feature registry."
+version = "1.0.0"
+id = "artifacts/growth-engine"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 21988
+
+[services.development]
+run = "pnpm --filter @workspace/growth-engine run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/growth-engine", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/growth-engine/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "21988"
+BASE_PATH = "/"
