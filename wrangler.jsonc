@@ -1,0 +1,9 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "xavelyq-growth-engine",
+  "compatibility_date": "2026-11-09",
+  "assets": {
+    "directory": "./artifacts/growth-engine/dist/public",
+    "not_found_handling": "single-page-application"
+  }
+}
