@@ -74,6 +74,8 @@ allowBuilds:
   msw: true
   unrs-resolver: true
   '@clerk/shared': true
+  pnpm: true
+  workerd: true
 overrides:
   "proxy-addr@^2": "^2.0.8"
   "source-map-js@^1": "^1.2.2"
